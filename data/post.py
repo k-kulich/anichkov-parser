@@ -8,5 +8,5 @@ class Post(SqlAlchemyBase):
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
     author_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('authors.id'))
-    date = sqlalchemy.Column(sqlalchemy.DateTime)
+    date = sqlalchemy.Column(sqlalchemy.Date)  # дата публикации
     text = sqlalchemy.Column(sqlalchemy.String)
