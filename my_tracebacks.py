@@ -6,3 +6,8 @@ class AuthorError(Exception):
 class DateError(Exception):
     def __init__(self):
         self.txt = 'Ошибка даты.'
+
+
+class NoTokenError(Exception):
+    def __init__(self):
+        self.txt = 'Ошибка: отсутствует токен доступа.'
