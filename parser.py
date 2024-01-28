@@ -1,6 +1,6 @@
 """
 Реализует класс, занимающийся парсингом сайтов (работа с HTTP/HTTPS/API) и отправляющий данные на
-обработку в db_worker.
+обработку.
 """
 import requests  # для выполнения GET-запросов
 import time  # для пауз между запросами и форматирования времени из UNIXTIME
@@ -45,7 +45,7 @@ class Parser:
     def __get_bitrix_soup():
         """
         Отправить запрос GET по адресу сайта portal.anichkov.ru и получить код страницы.
-        :return: "суп" - HTML-код в удобном виде благодаря
+        :return: "суп" - HTML-код в виде дерева объектов (по тегам).
         """
         url = Parser.URL['bitrix']
         authorize = os.getenv('BX_LOGIN'), os.getenv('BX_PASSWORD')
@@ -55,7 +55,7 @@ class Parser:
         return BeautifulSoup(request.text, 'lxml')
 
     @staticmethod
-    def __save_bitrix_links(tag, message: post.Post):
+    def __save_bitrix_links(tag, message: tuple):
         """
         Сохранить всю информацию о файлах - ссылку на скачивание, название, размер - в Post.
         :param tag: тег, в котором находятся все аттачи конкретного сообщения.
@@ -68,10 +68,11 @@ class Parser:
                 continue
             a = div.contents[3].a
             # запомнить все данные по файлам
-            message.add_attach((a['href'], a['data-bx-title'], a['data-bx-SIZE'], 'doc'))
+            message += ((a['href'], a['data-bx-title'], a['data-bx-SIZE'], 'doc'),)
+        return message
 
     @staticmethod
-    def __save_vk_attaches(attachments: list, message: post.Post):
+    def __save_vk_attaches(attachments: list, message: tuple):
         """
         Получить только нужную инфу о закрепах и сохоранить ее в посте.
         :param attachments: список аттачей записи, возвращаемых из vk через json (vk_api конвертит).
@@ -94,7 +95,8 @@ class Parser:
                     if sz['type'] == 'y':
                         url = sz['url']
                         break
-            message.add_attach((url, title, size, tp))  # добавить к сообщению
+            message += ((url, title, size, tp),)  # добавить к сообщению
+        return message
 
     def parse_bitrix(self, post_limit=8):
         """
@@ -112,20 +114,20 @@ class Parser:
         for tag in soup.find_all('div', class_='feed-post-title-block', limit=post_limit):
             # получить данные из "шапки" поста
             post_head = str(tag.contents[0].get_text()), str(tag.contents[2].contents[0].get_text())
-            message = post.Post((self.CREATORS.get(post_head[0], 'нераспознанный'), post_head[1]))
+            message = ((self.CREATORS.get(post_head[0], 'нераспознанный'), post_head[1]),)
             if post_head[0] == 'portal.anichkov.ru':
-                message.add_line('Добавлен новый внешний пользователь')
+                message += ('Добавлен новый внешний пользователь',)
             # получить текст сообщения
             for string in tag.next_sibling.contents[0].stripped_strings:
-                message.add_line(str(string).replace('\xa0', ''))
+                message += (str(string).replace('\xa0', ''),)
             # перейти к тегу, который должен содержать аттачи
             nxt = tag.next_sibling.next_sibling
             while str(nxt.name) != 'div':
                 nxt = nxt.next_sibling
             # если аттачи у текущего сообщения вообще имеются
-            if 'disk-attach-block' in str(nxt.get('id')):
+            if 'disk-attach-block' in str(nxt.async_get('id')):
                 # добавить список названий аттачей к тексту поста
-                self.__save_bitrix_links(nxt, message)
+                message = self.__save_bitrix_links(nxt, message)
             posts.append(message)
 
         return posts
@@ -140,18 +142,18 @@ class Parser:
         posts = []
         for group in self.VK_GROUPS:  # перебрать сообщества
             if group[0] == '-':  # через id и краткое имя группы разный немного доступ
-                response = self.vk.wall.get(owner_id=group, count=post_count)
+                response = self.vk.wall.async_get(owner_id=group, count=post_count)
             else:
-                response = self.vk.wall.get(domain=group, count=post_count)
+                response = self.vk.wall.async_get(domain=group, count=post_count)
             # перебрать посты в сообществе
             for item in response['items']:
                 subj = self.VK_GROUPS[group]  # предмет, задание по которому опубликовано
                 # возвращает мне время в UNIXTIME, так что преобразовываем в человеческий
                 tm = time.strftime("%d %b %Y %H:%M", time.localtime(item['date']))
-                message = post.Post((subj, tm))  # создать объект-пост
-                message.add_line(item['text'])  # сохранить текст поста
-                if item.get('attachments', False):  # если есть, то распарсить аттачи
-                    self.__save_vk_attaches(item['attachments'], message)
+                message = ((subj, tm),)  # всю информацию о посте храним в кортеже
+                message += (item['text'],)  # сохранить текст поста
+                if item.async_get('attachments', False):  # если есть, то распарсить аттачи
+                    message = self.__save_vk_attaches(item['attachments'], message)
                 posts.append(message)
             time.sleep(0.35)  # время ожидания: лимит запросов к VK API - 3 запроса в секунду
         return posts
