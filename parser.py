@@ -3,11 +3,13 @@
 обработку.
 """
 import requests  # для выполнения GET-запросов
+import asyncio
 import time  # для пауз между запросами и форматирования времени из UNIXTIME
 import os  # для получения переменной окружения
 from vk_api import VkApi  # готовая библиотека для работы с VK API
 from bs4 import BeautifulSoup, element  # для парсинга кода
 from my_tracebacks import NoTokenError  # ошибка токена доступа
+from async_http import BITRIX_AUTH, async_get
 
 
 class Parser:
