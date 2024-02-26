@@ -79,7 +79,8 @@ class Parser:
                 subj = self.VK_GROUPS[group]  # предмет, задание по которому опубликовано
                 # возвращает мне время в UNIXTIME, так что преобразовываем в человеческий
                 tm = datetime.datetime.utcfromtimestamp(item['date'])
-                message = ((subj, tm),)  # всю информацию о посте храним в кортеже
+                date = datetime.date(year=tm.year, month=tm.month, day=tm.day)
+                message = ((subj, date),)  # всю информацию о посте храним в кортеже
                 message += (item['text'].replace('\\n', ''),)  # сохранить текст поста
                 if item.get('attachments', False):  # если есть, то распарсить аттачи
                     message = self.__save_vk_attaches(item['attachments'], message)

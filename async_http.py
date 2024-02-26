@@ -6,7 +6,7 @@ import os
 import aiohttp
 from bs4 import BeautifulSoup, element
 from my_tracebacks import NoTokenError
-from correct_data import rewrite_format
+from correct_date import rewrite_format
 
 
 URL = {'bitrix': 'https://portal.anichkov.ru/extranet/'}
