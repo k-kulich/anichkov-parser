@@ -45,7 +45,7 @@
     </column>
     <column>
      <property name="text">
-      <string>Автор</string>
+      <string>Текст</string>
      </property>
     </column>
     <column>
@@ -55,7 +55,7 @@
     </column>
     <column>
      <property name="text">
-      <string>Текст</string>
+      <string>Автор</string>
      </property>
     </column>
    </widget>

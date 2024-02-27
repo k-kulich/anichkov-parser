@@ -43,7 +43,9 @@ class Worker:
             return list(map(lambda x: x.id,
                             self.session.query(Author).filter(Author.name == name)))[0]
         except IndexError:
-            raise AuthorError
+            self.add_author(name)
+            return list(map(lambda x: x.id,
+                            self.session.query(Author).filter(Author.name == name)))[0]
 
     def get_attachments(self, post_id=0):
         """Получить прикрепленные файлы и ссылки.
@@ -61,16 +63,27 @@ class Worker:
         :param date: дата, за которую ищем посты;
         :return : список всех постов данного автора; если id автора указан неверно,
         функция вернет исключение AuthorError."""
+        if date > self.DEF_DATE:
+            return list(map(lambda x: (x.id, x.text,
+                                       datetime.date.strftime(x.date.python_type, '%d.%m.%y'),
+                                       self.get_author_by(x.author_id)),
+                            self.session.query(Post).filter(Post.date.python_type == date)))
         if author_id and date > self.DEF_DATE:
             author = self.get_author_by(author_id)
-            return list(map(lambda x: (x.text, x.date, author),
+            return list(map(lambda x: (x.id, x.text,
+                                       datetime.date.strftime(x.date.python_type, '%d.%m.%y'),
+                                       author),
                             self.session.query(Post).filter(Post.author_id == author_id,
-                                                            Post.date == date)))
+                                                            Post.date.python_type == date)))
         if author_id:
             author = self.get_author_by(author_id)
-            return list(map(lambda x: (x.text, x.date, author),
+            return list(map(lambda x: (x.id, x.text,
+                                       datetime.date.strftime(x.date.python_type, '%d.%m.%y'),
+                                       author),
                             self.session.query(Post).filter(Post.author_id == author_id)))
-        return list(map(lambda x: (x.text, x.date, self.get_author_by(x.author_id)),
+        return list(map(lambda x: (x.id, x.text,
+                                   datetime.date.strftime(x.date.python_type, '%d.%m.%y'),
+                                   self.get_author_by(x.author_id)),
                         self.session.query(Post).all()))
 
     def add_author(self, name: str):

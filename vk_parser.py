@@ -81,7 +81,7 @@ class Parser:
                 tm = datetime.datetime.utcfromtimestamp(item['date'])
                 date = datetime.date(year=tm.year, month=tm.month, day=tm.day)
                 message = ((subj, date),)  # всю информацию о посте храним в кортеже
-                message += (item['text'].replace('\\n', ''),)  # сохранить текст поста
+                message += (item['text'].replace('\\n', '\n'),)  # сохранить текст поста
                 if item.get('attachments', False):  # если есть, то распарсить аттачи
                     message = self.__save_vk_attaches(item['attachments'], message)
                 posts.append(message)

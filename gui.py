@@ -3,6 +3,7 @@ import sys
 import datetime as dt
 from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication, QMainWindow, QHeaderView, QTableWidgetItem
+from my_tracebacks import NeedSave
 
 
 class MyGUI(QMainWindow):
@@ -14,12 +15,18 @@ class MyGUI(QMainWindow):
 
         # настраиваем внешний вид столбцов
         header1 = self.table.horizontalHeader()
-        header1.setSectionResizeMode(0, QHeaderView.Stretch)
+        header1.setSectionResizeMode(0, QHeaderView.ResizeToContents)
         header1.setSectionResizeMode(1, QHeaderView.Stretch)
         header1.setSectionResizeMode(2, QHeaderView.Stretch)
+        header1.setSectionResizeMode(3, QHeaderView.Stretch)
 
         # инициализируем statusbar
         self.status = self.statusBar()
+
+        # задать функции кнопок
+        self.search.clicked.connect(self.showData)
+        self.showChosen.clicked.connect(self.showChosenPost)
+        self.save.clicked.connect(self.saveFile)
 
     def getFilteredData(self):
         """Вернуть отфильтрованную по введенным параметрам информацию"""
@@ -55,6 +62,26 @@ class MyGUI(QMainWindow):
             self.table.setRowCount(self.table.rowCount() + 1)
             for j, elem in enumerate(row):
                 self.table.setElem(i, j, QTableWidgetItem(str(elem)))
+
+    def showChosenPost(self):
+        """Показать пост, который выбрали в таблице."""
+        if self.table.selestedItems():
+            self.postView.clear()
+            post_id = int(self.table.selestedItems()[0].text())
+            post_text = self.table.selestedItems()[1].text()
+            attachments = self.manager.get_attachments(post_id=post_id)
+            post_text += '\n\nПрикрепленные файлы:\n' + '\n'.join(map(lambda x: f'{x[0]}) {x[1]}',
+                                                                      enumerate(attachments)))
+            self.postView.appendPlainText(post_text)
+        else:
+            self.status.showMessage('Не выбран элемент для просмотра.', 5000)
+
+    def saveFile(self):
+        """Выбрасывает исключение со сслыкой в тексте, чтобы основная функция все сохранила."""
+        text = self.fileBox.currentText()
+        if text != 'Выберите файл':
+            raise NeedSave(text)
+        self.status.showMessage('Невозможно сохранить данный файл.', 5000)
 
 
 def except_hook(tp, value, traceback):
