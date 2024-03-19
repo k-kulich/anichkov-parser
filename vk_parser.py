@@ -2,10 +2,9 @@
 Реализует класс, занимающийся парсингом сайтов (работа с HTTP/HTTPS/API) и отправляющий данные на
 обработку.
 """
-import requests  # для выполнения GET-запросов
 import datetime  # для преобразования из unixtime в человеческий
 import os  # для получения переменной окружения
-from vk_api import VkApi  # готовая библиотека для работы с VK API
+from vk_api import VkApi, exceptions  # готовая библиотека для работы с VK API
 from my_tracebacks import NoTokenError  # ошибка токена доступа
 
 
@@ -24,20 +23,11 @@ class Parser:
         token = os.getenv("VK_TOKEN")
         if not token:
             raise NoTokenError
-        self.vk_session = VkApi(token=token)
+        try:
+            self.vk_session = VkApi(token=token)
+        except exceptions.ApiError:
+            raise NoTokenError
         self.vk = self.vk_session.get_api()
-
-    @staticmethod
-    def get_attach_by_url(url, filepath):
-        """
-        Записать данные из файла по ссылке в файл с указанным путем.
-        :param url: адрес ресурса, с которого берем файл.
-        :param filepath: путь к файлу на компьютере пользователя, куда надо его записать.
-        :return: None.
-        """
-        response = requests.get(url)
-        with open(filepath, 'wb') as f:
-            f.write(response.content)
 
     @staticmethod
     def __save_vk_attaches(attachments: list, message: tuple):
@@ -73,7 +63,10 @@ class Parser:
         """
         posts = []
         for group in self.VK_GROUPS:  # перебрать сообщества
-            response = self.vk.wall.get(owner_id='-' + group, count=post_count)
+            try:
+                response = self.vk.wall.get(owner_id='-' + group, count=post_count)
+            except exceptions.ApiError:
+                raise NoTokenError
             # перебрать посты в сообществе
             for item in response['items']:
                 subj = self.VK_GROUPS[group]  # предмет, задание по которому опубликовано

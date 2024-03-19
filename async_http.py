@@ -4,6 +4,7 @@
 """
 import os
 import aiohttp
+import requests
 from bs4 import BeautifulSoup, element
 from my_tracebacks import NoTokenError
 from correct_date import rewrite_format
@@ -14,6 +15,18 @@ login, password = os.getenv('BX_LOGIN'), os.getenv('BX_PASSWORD')
 if not all((login, password)):
     raise NoTokenError
 BITRIX_AUTH = aiohttp.BasicAuth(login, password=password)
+
+
+def save_by_url(url, filepath):
+    """
+    Записать данные из файла по ссылке в файл с указанным путем.
+    :param url: адрес ресурса, с которого берем файл.
+    :param filepath: путь к файлу на компьютере пользователя, куда надо его записать.
+    :return: None.
+    """
+    response = requests.get(url)
+    with open(filepath, 'wb') as f:
+        f.write(response.content)
 
 
 async def async_get(url, auth=None):

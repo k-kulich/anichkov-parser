@@ -10,7 +10,7 @@ class DateError(Exception):
 
 class NoTokenError(Exception):
     def __init__(self):
-        self.txt = 'Ошибка: отсутствует токен доступа.'
+        self.txt = 'Ошибка: токен доступа отсутствует или недействителен.'
 
 
 class NeedSave(Exception):
