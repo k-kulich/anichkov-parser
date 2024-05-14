@@ -26,6 +26,10 @@ class Worker:
         """Получить список всех имен авторов постов."""
         return list(map(lambda x: x.name, self.session.query(Author).all()))
 
+    def get_dates(self):
+        """Получить все даты публикаций постов."""
+        return list(map(lambda x: x.date.strftime('%d.%m.%y'), self.session.query(Post).all()))
+
     def get_author_by(self, author_id=None, name=''):
         """Получить автора по имени или айдишнику.
         :param author_id: (необязательный) id автора в БД;
@@ -55,6 +59,15 @@ class Worker:
                             self.session.query(Attachment).filter(Attachment.post_id == post_id)))
         return list(map(lambda x: x.link, self.session.query(Attachment).all()))
 
+    def get_attachment_filename(self, link):
+        """
+        Получить имя файла по ссылке.
+        :param link: ссылка на файл.
+        :return: имя файла.
+        """
+        return list(map(lambda x: x.filename,
+                        self.session.query(Attachment).filter(Attachment.link == link)))[0]
+
     def get_post_by_id(self, post_id=None):
         """Получить текст одного-единственного поста, который нас интересует.
         :param post_id: id поста (логично).
@@ -70,11 +83,6 @@ class Worker:
         :param date: дата, за которую ищем посты;
         :return : список всех постов данного автора; если id автора указан неверно,
         функция вернет исключение AuthorError."""
-        if date > self.DEF_DATE:
-            return list(map(lambda x: (x.id, x.text,
-                                       datetime.date.strftime(x.date, '%d.%m.%y'),
-                                       self.get_author_by(x.author_id)),
-                            self.session.query(Post).filter(Post.date == date)))
         if isinstance(author_id, int) and date > self.DEF_DATE:
             author = self.get_author_by(author_id)
             return list(map(lambda x: (x.id, x.text,
@@ -82,6 +90,11 @@ class Worker:
                                        author),
                             self.session.query(Post).filter(Post.author_id == author_id,
                                                             Post.date == date)))
+        if date > self.DEF_DATE:
+            return list(map(lambda x: (x.id, x.text,
+                                       datetime.date.strftime(x.date, '%d.%m.%y'),
+                                       self.get_author_by(x.author_id)),
+                            self.session.query(Post).filter(Post.date == date)))
         if isinstance(author_id, int):
             author = self.get_author_by(author_id)
             return list(map(lambda x: (x.id, x.text,
@@ -114,7 +127,8 @@ class Worker:
             if attach and attach in attaches:
                 continue
             new_attach = Attachment()
-            new_attach.link = attach
+            new_attach.link = attach[0]
+            new_attach.filename = attach[1]
             new_attach.post_id = post_id
             self.session.add(new_attach)
         self.session.commit()

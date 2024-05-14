@@ -11,7 +11,7 @@ from correct_date import rewrite_format
 
 
 URL = {'bitrix': 'https://portal.anichkov.ru/extranet/'}
-login, password = os.getenv('BX_LOGIN'), os.getenv('BX_PASSWORD')
+login, password = os.getenv('BX_LOGIN'), os.getenv('BX_PASSWORD')  # данные для входа
 if not all((login, password)):
     raise NoTokenError
 BITRIX_AUTH = aiohttp.BasicAuth(login, password=password)
@@ -24,7 +24,7 @@ def save_by_url(url, filepath):
     :param filepath: путь к файлу на компьютере пользователя, куда надо его записать.
     :return: None.
     """
-    response = requests.get(url)
+    response = requests.get(url, auth=(login, password))
     with open(filepath, 'wb') as f:
         f.write(response.content)
 
@@ -53,7 +53,11 @@ async def save_bitrix_links(tag, message: tuple):
             continue
         a = div.contents[3].a
         # запомнить все данные по файлам
-        message += ((a['href'], a['data-title'], 'doc'),)
+        if not a['href'].startswith('https'):
+            message += (('https://portal.anichkov.ru/extranet' + a['href'], 'doc', a['data-title']),)
+        else:
+            message += ((a['href'], 'doc',  a['data-title']),)
+        # print(message)
     return message
 
 

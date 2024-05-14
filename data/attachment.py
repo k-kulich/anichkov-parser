@@ -9,3 +9,4 @@ class Attachment(SqlAlchemyBase):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
     post_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('posts.id'))
     link = sqlalchemy.Column(sqlalchemy.String)
+    filename = sqlalchemy.Column(sqlalchemy.String)

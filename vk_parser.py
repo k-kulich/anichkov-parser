@@ -19,8 +19,26 @@ class Parser:
                  '186426728': 'олимпиадное движение АЛ', '222581416': 'microAL',
                  '186822601': 'ШСК Аничков'}
 
-    def __init__(self):
-        token = os.getenv("VK_TOKEN")
+    def __init__(self, first_try=True):
+        if first_try:
+            token = os.getenv("VK_TOKEN")
+            if not token:
+                raise NoTokenError
+            try:
+                self.vk_session = VkApi(token=token)
+            except exceptions.ApiError:
+                raise NoTokenError
+            self.vk = self.vk_session.get_api()
+            return
+        self.vk_session = None
+        self.vk = None
+
+    def add_token(self, token):
+        """
+        Получить токен извне.
+        :param token: токен доступа.
+        :return: None.
+        """
         if not token:
             raise NoTokenError
         try:
@@ -46,12 +64,13 @@ class Parser:
                 title = attach[tp]['title']
                 url = attach[tp]['url']
             else:
-                title = 'photo'
+                title = 'photo.jpg'
                 for sz in attach[tp]['sizes']:
                     if sz['type'] == 'y':
                         url = sz['url']
                         break
-            message += ((url, title, size, tp),)  # добавить к сообщению
+            message += ((url, tp, size, title),)  # добавить к сообщению
+            # print(message)
         return message
 
     def parse_vk(self, post_count=3):
